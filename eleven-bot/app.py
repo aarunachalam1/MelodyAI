@@ -1,0 +1,101 @@
+from flask import Flask, render_template, request, jsonify
+import requests
+import os
+import uuid
+import elevenlabs
+from dotenv import load_dotenv
+
+load_dotenv()
+app = Flask(__name__)
+
+eleven_api = os.getenv("ELEVEN_API_KEY")
+voice_id = os.getenv("VOICE_ID")
+
+def text_to_speech(text):
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    headers = {
+        "xi-api-key": eleven_api,
+        "Content-Type": "application/json"
+    }
+    data = { "text": text }
+
+    response = requests.post(url, headers=headers, json=data)
+
+    filename = f"static/audio_{uuid.uuid4().hex}.mp3"
+    if response.status_code == 200:
+        with open(filename, "wb") as f:
+            f.write(response.content)
+        return filename
+    return None
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    user_msg = request.json.get("message")
+
+    # TEMP: chatbot just repeats back
+    bot_reply = f"You said: {user_msg}"
+
+    # Convert to speech
+    audio_path = text_to_speech(bot_reply)
+
+    return jsonify({
+        "reply": bot_reply,
+        "audio": audio_path,
+    })
+
+@app.route("/api/speech-to-text", methods=["POST"])
+def speech_to_text():
+    import tempfile
+    import subprocess
+    from elevenlabs.client import ElevenLabs
+
+    client = ElevenLabs(api_key=os.getenv("eleven_api"))
+
+    # Save uploaded webm temporarily
+    tmp_webm = tempfile.NamedTemporaryFile(delete=False, suffix=".webm")
+    tmp_webm.write(request.data)
+    tmp_webm.close()
+
+    # Convert webm → wav
+    wav_path = tmp_webm.name.replace(".webm", ".wav")
+    subprocess.run([
+        "ffmpeg", "-y", "-i", tmp_webm.name,
+        "-ar", "16000", "-ac", "1",
+        wav_path
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # Send WAV to ElevenLabs speech-to-text
+    with open(wav_path, "rb") as audio_file:
+        transcript = client.speech_to_text.convert(
+            file=audio_file,
+            model_id="eleven_multilingual_v2"
+        )
+
+    text = transcript.text if transcript and transcript.text else ""
+
+    print("Saved webm:", tmp_webm.name)
+    print("Converted wav:", wav_path)
+    print("Transcript object:", transcript)
+    print("Transcript text:", transcript.text if hasattr(transcript, "text") else "NO TEXT")
+
+    return jsonify({"text": text})
+
+@app.route("/chat-ui")
+def chat_ui():
+    return render_template("chat.html")
+
+@app.route("/saved")
+def saved():
+    plot_files = [f"/static/plots/{f}" for f in os.listdir("static/plots")]
+    return render_template("saved.html", plots=plot_files)
+
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+if __name__ == "__main__":
+    app.run(debug=True)

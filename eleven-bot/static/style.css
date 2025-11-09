@@ -1,0 +1,177 @@
+/* GLOBAL */
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: #f4f5fa;
+  color: #222;
+}
+
+/* NAVBAR CONTAINER */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 64px;
+
+  background: rgba(25, 25, 32, 0.85);
+  backdrop-filter: blur(8px);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 0 32px;
+  box-sizing: border-box;
+  z-index: 999;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* LOGO */
+.navbar .logo {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+/* NAV LINKS */
+.nav-links {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a {
+  color: #d5d5d5;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: 0.25s;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.nav-links a:hover,
+.nav-links .active {
+  color: #fff;
+  background: rgba(0, 122, 255, 0.15);
+}
+
+/* ✅ RESPONSIVE FIX: shrink gracefully on smaller screens */
+@media (max-width: 750px) {
+  .navbar {
+    padding: 0 16px;
+  }
+  .nav-links {
+    gap: 16px;
+  }
+}
+
+/* ✅ FULL MOBILE MODE: dropdown menu */
+@media (max-width: 550px) {
+  .nav-links {
+    position: absolute;
+    top: 64px;
+    right: 0;
+    width: 180px;
+    background: rgba(25, 25, 32, 0.95);
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    border-bottom-left-radius: 12px;
+    display: none;
+  }
+
+  .nav-links.show {
+    display: flex;
+  }
+
+  .hamburger {
+    display: block;
+  }
+}
+/* mark active pages */
+.nav-links .active {
+  color: #6d4aff;
+  font-weight: 700;
+}
+
+/* CHAT PAGE */
+.chat-container {
+  max-width: 700px;
+  margin: 80px auto;
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: rgba(0,0,0,0.08) 0px 4px 15px;
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+#chat-window {
+  height: 400px;
+  padding: 15px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.input-bar {
+  display: flex;
+  gap: 10px;
+}
+
+.input-bar input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.input-bar button {
+  padding: 12px 18px;
+  border: none;
+  background: #6d4aff;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.input-bar button:hover {
+  background: #5535ff;
+}
+
+/* SAVED PLOTS GALLERY */
+.saved-gallery {
+  max-width: 900px;
+  margin: 60px auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 25px;
+}
+
+.page-title {
+  text-align: center;
+  margin-top: 40px;
+}
+
+/* ABOUT PAGE */
+.about-container {
+  max-width: 800px;
+  margin: 80px auto;
+  padding: 30px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: rgba(0,0,0,0.08) 0px 4px 15px;
+}
+
+/* FADE ANIMATION */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

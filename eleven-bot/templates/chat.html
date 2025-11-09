@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat with MelodyAI</title>
+  <link rel="stylesheet" href="/static/style.css" />
+
+
+  <style>
+    body {
+      margin: 0;
+      background: #0f0f14;
+      color: #fff;
+      font-family: "Inter", sans-serif;
+    }
+
+    /* ✅ keeps navbar at top, chat centered below */
+    .page-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding-top: 100px;   /* space under navbar */
+    }
+
+
+    .chat-wrapper {
+      background: #1a1a22;
+      width: 80%;
+      max-width: 900px;
+      height: 85vh;
+      border-radius: 20px;
+      box-shadow: 0 6px 30px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 16px 24px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #0d6efd, #6610f2);
+    }
+
+    #messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msg {
+      max-width: 75%;
+      padding: 12px 18px;
+      border-radius: 14px;
+      line-height: 1.4;
+    }
+
+    .user {
+      background: #0d6efd;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
+
+    .bot {
+      background: #282832;
+      color: #e7e7e7;
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 8px;
+      padding: 15px;
+      background: #14141a;
+    }
+
+    #chat-input {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: none;
+      background: #22222c;
+      color: white;
+      outline: none;
+    }
+
+    .btn {
+      padding: 12px 18px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.25s;
+    }
+
+    .send-btn {
+      background: #0d6efd;
+      color: white;
+    }
+
+    .send-btn:hover {
+      background: #0a56ca;
+    }
+
+    .mic-btn {
+      background: crimson;
+      color: white;
+    }
+
+    #output-area img {
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    /* typing bubble dots */
+.typing {
+    background: #282832;
+    color: #e7e7e7;
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+}
+
+.typing-dots {
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+}
+
+.typing-dots span {
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+    display: inline-block;
+    animation: blink 1.2s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+.typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes blink {
+    0% { opacity: 0.2; transform: translateY(0px); }
+    50% { opacity: 1; transform: translateY(-3px); }
+    100% { opacity: 0.2; transform: translateY(0px); }
+}
+
+/* message fade-in already handled in JS; add smooth scrolling */
+#messages {
+    scroll-behavior: smooth;
+}
+
+  </style>
+
+  <script defer src="/static/script.js"></script>
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="logo">🎵 MelodyAI</div>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/chat-ui" class="active">Chat with Melody</a></li>
+      <li><a href="/saved">Saved Plots</a></li>
+      <li><a href="/about">About</a></li>
+    </ul>
+  </nav>
+
+  <div class = "page-container">
+    <div class="chat-wrapper">
+      <div class="chat-header">
+        ♬ Melody — Your Data Analyst Assistant
+      </div>
+
+      <div id="messages">
+        <div class="msg bot">
+          Hi! I’m Melody — ask me questions about your data!
+        </div>
+      </div>
+
+      <div id="output-area" class="p-3"></div>
+
+      <div class="input-area">
+        <input id="chat-input" placeholder="Type something...">
+        <button id="send-btn" class="btn send-btn">Send</button>
+        <button id="mic-btn" class="btn mic-btn">🎤</button>
+      </div>
+
+      <p id="status" style="padding: 8px; font-size: 0.9rem; color: #bbb;"></p>
+    </div>
+  </div>
+</body>
+</html>
