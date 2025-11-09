@@ -114,8 +114,14 @@ def chat_ui():
 
 @app.route("/saved")
 def saved():
-    plot_files = [f"./plots/{f}" for f in os.listdir("./plots")]
-    plot_files.append("/static/plots/" + f)
+    plot_folder = os.path.join("static", "plots")
+    plot_files = []
+
+    # loop over files in the folder
+    for f in os.listdir(plot_folder):
+        if f.lower().endswith(".png"):  # only include PNGs
+            plot_files.append("/static/plots/" + f)
+
     return render_template("saved.html", plots=plot_files)
 
 @app.route("/about")
