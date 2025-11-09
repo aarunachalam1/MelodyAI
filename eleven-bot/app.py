@@ -43,7 +43,9 @@ def home():
 def chat():
     user_msg = request.json.get("message")
 
+    # TEMP: chatbot just repeats back
     bot_reply = loop.run_until_complete(process_message(user_msg))
+
     # Convert to speech
     audio_path = text_to_speech(bot_reply)
 
@@ -95,7 +97,7 @@ def chat_ui():
 
 @app.route("/saved")
 def saved():
-    plot_files = [f"../gemini-mcp-backend/plots/{f}" for f in os.listdir("../gemini-mcp-backend/plots")]
+    plot_files = [f"./plots/{f}" for f in os.listdir("./plots")]
     return render_template("saved.html", plots=plot_files)
 
 @app.route("/about")

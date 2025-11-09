@@ -44,6 +44,17 @@ async function sendMessage() {
     makeMessageDiv("You", text);
     chatInput.value = "";
 
+    // ✅ Mock plot logic
+    if (text.toLowerCase().includes("plot")) {
+        setTimeout(() => {
+            makeMessageDiv("Melody", "Here's your plot!");
+            expandLayout();           // <-- move chat left and show right panel
+            showMockPlot();           // <-- show the image
+        }, 800);
+        return; // stop further fetch to backend
+    }
+
+
     // Bot thinking animation
     const typingBubble = addTypingBubble();
 
@@ -71,6 +82,43 @@ async function sendMessage() {
         console.error(err);
     }
 }
+
+function showMockPlot() {
+    const output = document.getElementById("output-area");
+    output.innerHTML = ""; // clear previous
+
+    const plotDiv = document.createElement("div");
+    plotDiv.className = "mock-plot";
+    plotDiv.style.opacity = 0;
+    plotDiv.style.transform = "translateX(-30px)";
+    plotDiv.style.transition = "all 0.6s ease";
+    plotDiv.innerHTML = `<img src="MelodyAI/gemini-mcp-backend/plots/Scatter-Plot_thumb-01.png" />`;
+
+    output.appendChild(plotDiv);
+
+    requestAnimationFrame(() => {
+        plotDiv.style.opacity = 1;
+        plotDiv.style.transform = "translateX(0)";
+    });
+}
+
+
+function expandLayout() {
+    const chatPanel = document.getElementById("chat-panel");
+    const rightPanel = document.getElementById("right-panel");
+
+    if (!chatPanel || !rightPanel) return;
+
+    chatPanel.style.transition = "flex 0.5s ease";
+    chatPanel.style.flex = "1"; // left panel smaller
+    rightPanel.style.display = "block";
+    requestAnimationFrame(() => {
+        rightPanel.style.opacity = 1;
+    });
+}
+
+
+
 
 // Event Listeners
 if (sendBtn) sendBtn.addEventListener("click", sendMessage);
