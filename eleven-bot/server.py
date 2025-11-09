@@ -11,7 +11,7 @@ import pickle
 server = FastMCP(name="DataScienceTools")
 STATE_FILE = "server_state.pkl"
 MODEL_DIR = "saved_models"
-PLOTS_DIR = "plots"
+PLOTS_DIR = os.path.join(os.getcwd(), "static", "plots")
 
 os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(PLOTS_DIR, exist_ok=True)

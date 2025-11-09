@@ -188,3 +188,55 @@ body {
     width: 100%;
     display: block;
 }
+
+.get-started-btn {
+    background: linear-gradient(45deg, #6a5cff, #ff5ca2);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    padding: 14px 32px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.get-started-btn::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(45deg) scale(0);
+    transition: transform 0.5s ease;
+    pointer-events: none;
+}
+
+.get-started-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+}
+
+.get-started-btn:hover::before {
+    transform: rotate(45deg) scale(1);
+}
+
+.get-started-btn:active {
+    transform: translateY(1px) scale(0.98);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Subtle pulse animation */
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(106, 92, 255, 0.5); }
+    50% { box-shadow: 0 0 20px 10px rgba(106, 92, 255, 0.3); }
+}
+
+.get-started-btn.pulse {
+    animation: pulse 2s infinite;
+}

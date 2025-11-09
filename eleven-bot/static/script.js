@@ -2,41 +2,104 @@
 const sendBtn     = document.getElementById("send-btn");
 const chatInput   = document.getElementById("chat-input");
 const messagesDiv = document.getElementById("messages");
-const outputArea  = document.getElementById("output-area");
-const micBtn      = document.getElementById("mic-btn");
-const statusEl    = document.getElementById("status");
 
-// Fade-in effect for messages
-function makeMessageDiv(sender, text) {
+// Create text or image message bubble; returns created element
+function makeMessageDiv(sender, content, isImage = false) {
     const div = document.createElement("div");
     div.className = sender === "You" ? "msg user" : "msg bot";
-    div.style.opacity = 0;               // start transparent
-    div.innerHTML = text;
+    div.style.opacity = 0;
 
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    if (isImage) {
+        // create image element explicitly so we can handle onload/onerror
+        const img = document.createElement("img");
+        img.alt = "Plot";
+        img.style.maxWidth = "100%";
+        img.style.borderRadius = "10px";
+        img.style.display = "block";
 
-    // smooth fade-in
-    setTimeout(() => {
-        div.style.transition = "opacity 0.3s ease";
-        div.style.opacity = 1;
-    }, 10);
+        // If content already looks like a data URL or absolute/relative path, use it
+        img.src = content;
+
+        // show a tiny loader placeholder while image loads
+        const loader = document.createElement("div");
+        loader.textContent = "Loading image…";
+        loader.style.opacity = "0.6";
+        loader.style.fontSize = "0.9rem";
+        loader.style.color = "#bbb";
+
+        div.appendChild(loader);
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+        // When image loads, replace loader with actual image
+        img.onload = () => {
+            div.removeChild(loader);
+            div.appendChild(img);
+            // fade in image (and bubble)
+            requestAnimationFrame(() => {
+                div.style.transition = "opacity 0.25s ease";
+                div.style.opacity = 1;
+                img.style.transition = "opacity 0.3s ease";
+                img.style.opacity = 1;
+            });
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        };
+
+        img.onerror = () => {
+            // replace loader with error message
+            loader.textContent = "⚠️ Image failed to load.";
+            console.error("Image failed to load:", content);
+            div.style.transition = "opacity 0.25s ease";
+            div.style.opacity = 1;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        };
+
+        return div; // already appended; onload will complete fade
+    } else {
+        // plain text
+        div.textContent = content;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        requestAnimationFrame(() => {
+            div.style.transition = "opacity 0.25s ease";
+            div.style.opacity = 1;
+        });
+        return div;
+    }
 }
 
-// Bot typing indicator bubble
+// Typing bubble (returns bubble so caller can remove it)
 function addTypingBubble() {
     const bubble = document.createElement("div");
     bubble.className = "msg bot typing";
     bubble.innerHTML = `
-        <div class="typing-dots">
+        <div class="typing-dots" aria-hidden="true">
             <span></span><span></span><span></span>
         </div>
     `;
+    // tiny fade-in to avoid layout jump
+    bubble.style.opacity = 0;
     messagesDiv.appendChild(bubble);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    return bubble; // so we can remove later
+    requestAnimationFrame(() => {
+        bubble.style.transition = "opacity 0.18s ease";
+        bubble.style.opacity = 1;
+    });
+    return bubble;
 }
 
+// Remove typing bubble safely
+function removeTypingBubble(bubble) {
+    if (!bubble) return;
+    // fade-out then remove
+    bubble.style.transition = "opacity 0.15s ease";
+    bubble.style.opacity = 0;
+    setTimeout(() => {
+        if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+    }, 160);
+}
+
+// Main send function
 async function sendMessage() {
     const text = chatInput.value.trim();
     if (!text) return;
@@ -44,18 +107,7 @@ async function sendMessage() {
     makeMessageDiv("You", text);
     chatInput.value = "";
 
-    // ✅ Mock plot logic
-    if (text.toLowerCase().includes("plot")) {
-        setTimeout(() => {
-            makeMessageDiv("Melody", "Here's your plot!");
-            expandLayout();           // <-- move chat left and show right panel
-            showMockPlot();           // <-- show the image
-        }, 800);
-        return; // stop further fetch to backend
-    }
 
-
-    // Bot thinking animation
     const typingBubble = addTypingBubble();
 
     try {
@@ -64,130 +116,92 @@ async function sendMessage() {
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({ message: text })
         });
+
+        // if backend returns JSON with reply and/or plot
         const data = await res.json();
+        removeTypingBubble(typingBubble);
 
-        typingBubble.remove();  // remove bubble
-        makeMessageDiv("Melody", data.reply);
-
+        if (data.reply) {
+            makeMessageDiv("Melody", data.reply);
+        }
         if (data.audio) {
-            new Audio(data.audio).play();
+            try {
+                let audioSrc = data.audio;
+                if (!audioSrc.startsWith("http") && !audioSrc.startsWith("/")) {
+                    audioSrc = "/static" + audioSrc.replace(/^\/+/, "");
+                }
+
+                const audio = new Audio(audioSrc);
+                audio.play().catch(err => console.warn("Audio playback failed:", err))
+            }
+            catch (err) {
+                console.error("Audio playback error:", err)
+            }
         }
         if (data.plot) {
-            outputArea.innerHTML = `<img src="${data.plot}" />`;
+            // data.plot may be either:
+            // - a URL path ("/static/plots/foo.png"), or
+            // - a base64 string (data URI or raw base64). We'll detect and adapt.
+            let imgSrc = data.plot;
+
+            // if backend returned raw base64 (no data: prefix), assume PNG
+            if (/^[A-Za-z0-9+/=]+\s*$/.test(imgSrc) && imgSrc.length > 100) {
+                imgSrc = "data:image/png;base64," + imgSrc;
+            }
+
+            // if backend returned just a relative path like "plots/foo.png", make it absolute under /static
+            if (!imgSrc.startsWith("http") && !imgSrc.startsWith("data:") && !imgSrc.startsWith("/")) {
+                imgSrc = "/static/" + imgSrc.replace(/^\/+/, "");
+            }
+
+            makeMessageDiv("Melody", imgSrc, true);
         }
 
     } catch (err) {
-        typingBubble.remove();
+        removeTypingBubble(typingBubble);
         makeMessageDiv("System", "❌ Error: Unable to reach backend.");
         console.error(err);
     }
 }
 
-function showMockPlot() {
-    const output = document.getElementById("output-area");
-    output.innerHTML = ""; // clear previous
-
-    const plotDiv = document.createElement("div");
-    plotDiv.className = "mock-plot";
-    plotDiv.style.opacity = 0;
-    plotDiv.style.transform = "translateX(-30px)";
-    plotDiv.style.transition = "all 0.6s ease";
-    plotDiv.innerHTML = `<img src="MelodyAI/gemini-mcp-backend/plots/Scatter-Plot_thumb-01.png" />`;
-
-    output.appendChild(plotDiv);
-
-    requestAnimationFrame(() => {
-        plotDiv.style.opacity = 1;
-        plotDiv.style.transform = "translateX(0)";
-    });
-}
-
-
-function expandLayout() {
-    const chatPanel = document.getElementById("chat-panel");
-    const rightPanel = document.getElementById("right-panel");
-
-    if (!chatPanel || !rightPanel) return;
-
-    chatPanel.style.transition = "flex 0.5s ease";
-    chatPanel.style.flex = "1"; // left panel smaller
-    rightPanel.style.display = "block";
-    requestAnimationFrame(() => {
-        rightPanel.style.opacity = 1;
-    });
-}
-
-
-
-
-// Event Listeners
+// wiring
 if (sendBtn) sendBtn.addEventListener("click", sendMessage);
-if (chatInput) {
-    chatInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") sendMessage();
+if (chatInput) chatInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendMessage();
+});
+
+
+// Keep track of already displayed plots
+const displayedPlots = new Set();
+
+async function showNewPlots() {
+    const response = await fetch("/list-plots");
+    const images = await response.json();
+
+    // only show images we haven't displayed yet
+    images.forEach(imgURL => {
+        if (!displayedPlots.has(imgURL)) {
+            makeMessageDiv("Melody", "New plot generated:");
+            makeMessageDiv("Melody", imgURL, true);
+            displayedPlots.add(imgURL);
+        }
     });
 }
 
+const evtSource = new EventSource("/plot-stream");
 
-// ✅ Microphone UX polish
-if (micBtn) {
-    micBtn.addEventListener("click", async () => {
-        statusEl.innerText = "🎙 Listening...";
+evtSource.onmessage = (event) => {
+    const filename = event.data.trim();
+    if (!filename) return;
 
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-        const chunks = [];
-
-        recorder.ondataavailable = (e) => chunks.push(e.data);
-        recorder.start();
-
-        setTimeout(() => recorder.stop(), 4000);
-
-        recorder.onstop = async () => {
-            statusEl.innerText = "Processing audio…";
-            const blob = new Blob(chunks, { type: "audio/webm" });
-            const formData = new FormData();
-            formData.append("audio", blob, "audio.webm");
-
-            // same loading animation
-            const bubble = addTypingBubble();
-
-            try {
-                const res = await fetch("/api/speech-to-text", {
-                    method: "POST",
-                    body: formData
-                });
-                const data = await res.json();
-                statusEl.innerText = "";
-
-                bubble.remove();
-                if (data.text) {
-                    makeMessageDiv("You", data.text);
-                    processTextFromSpeech(data.text);
-                }
-            } catch (err) {
-                bubble.remove();
-                statusEl.innerText = "Speech error";
-            }
-        };
-    });
-}
-
-async function processTextFromSpeech(text) {
-    const bubble = addTypingBubble();
-
-    const res = await fetch("/chat", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ message: text })
-    });
-    const data = await res.json();
-
-    bubble.remove();
-    makeMessageDiv("Melody", data.reply);
-
-    if (data.audio) new Audio(data.audio).play();
-    if (data.plot) {
-        outputArea.innerHTML = `<img src="${data.plot}" />`;
+    const imgPath = `/static/plots/${filename}`;
+    if (!displayedPlots.has(imgPath)) {
+        makeMessageDiv("Melody", "🎨 New plot generated:");
+        makeMessageDiv("Melody", imgPath, true);
+        displayedPlots.add(imgPath);
     }
-}
+};
+
+evtSource.onerror = (err) => {
+    console.warn("Plot stream disconnected, retrying...", err);
+};

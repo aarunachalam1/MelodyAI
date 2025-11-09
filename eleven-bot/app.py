@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, Response, stream_with_context, request, jsonify, send_from_directory
 import requests
-import os
+import os, time
 import uuid
 import elevenlabs
 from dotenv import load_dotenv
@@ -9,6 +9,9 @@ from client import process_message, init_mcp
 
 load_dotenv()
 app = Flask(__name__)
+
+PLOTS_FOLDER = os.path.join(app.static_folder, "plots")
+os.makedirs(PLOTS_FOLDER, exist_ok=True)
 
 eleven_api = os.getenv("ELEVEN_API_KEY")
 voice_id = "DtsPFCrhbCbbJkwZsb3d"
@@ -51,8 +54,22 @@ def chat():
 
     return jsonify({
         "reply": bot_reply,
-        "audio": audio_path,
+        "audio": "/" + audio_path.replace("\\", "/"),
     })
+
+@app.route("/plot-stream")
+def plot_stream():
+    def generate():
+        seen = set(os.listdir(PLOTS_FOLDER))
+        while True:
+            time.sleep(1.5)  
+            current = set(os.listdir(PLOTS_FOLDER))
+            new_files = current - seen
+            if new_files:
+                for filename in sorted(new_files):
+                    yield f"data:{filename}\n\n"
+                seen = current
+    return Response(stream_with_context(generate()), mimetype="text/event-stream")
 
 @app.route("/api/speech-to-text", methods=["POST"])
 def speech_to_text():
@@ -98,11 +115,26 @@ def chat_ui():
 @app.route("/saved")
 def saved():
     plot_files = [f"./plots/{f}" for f in os.listdir("./plots")]
+    plot_files.append("/static/plots/" + f)
     return render_template("saved.html", plots=plot_files)
 
 @app.route("/about")
 def about():
     return render_template("about.html")
+
+
+@app.route('/plots/<filename>')
+def serve_plot(filename):
+    return send_from_directory(PLOTS_FOLDER, filename)
+
+@app.route("/list-plots")
+def list_plots():
+    files = [
+        f"/static/plots/{file}"
+        for file in os.listdir(PLOTS_FOLDER)
+        if file.lower().endswith(".png")
+    ]
+    return jsonify(files)
 
 if __name__ == "__main__":
     app.run(debug=True)
