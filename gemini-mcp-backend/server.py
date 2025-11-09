@@ -6,18 +6,38 @@ import os
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
 
 server = FastMCP(name="DataScienceTools")
+STATE_FILE = "server_state.pkl"
+MODEL_DIR = "saved_models"
+PLOTS_DIR = "plots"
+
+os.makedirs(MODEL_DIR, exist_ok=True)
+os.makedirs(PLOTS_DIR, exist_ok=True)
+
+def save_state():
+    with open(STATE_FILE, "wb") as f:
+        pickle.dump({"datasets": datasets, "models": models}, f)
+
+def load_state():
+    global datasets, models
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE, "rb") as f:
+            state = pickle.load(f)
+            datasets.update(state.get("datasets", {}))
+            models.update(state.get("models", {}))
+
+
 datasets = {}
 models = {}
-
-MODEL_DIR = "saved_models"
-os.makedirs(MODEL_DIR, exist_ok=True)
+load_state()
 
 @server.tool()
 def load_csv(file_path: str):
     df = pd.read_csv(file_path)
     datasets[file_path] = df
+    save_state()
     return {
         "columns": df.columns.tolist(), 
         "num_rows": len(df),
@@ -30,7 +50,7 @@ def summarize_data(file_path: str):
         return {"error": "Dataset not loaded. Call load_csv first."}
     df = datasets[file_path]
     return df.describe().to_dict()
-# Add plot=true field
+
 @server.tool()
 def run_linear_regression(file_path: str, x_cols, y_col: str, model_name: str = None):
     if file_path not in datasets:
@@ -57,7 +77,7 @@ def run_linear_regression(file_path: str, x_cols, y_col: str, model_name: str = 
     models[model_name] = model
 
     joblib.dump(model, os.path.join(MODEL_DIR, f"{model_name}.pkl"))
-
+    save_state()
     return {"model_name": model_name, "results": results}
 
 @server.tool()
@@ -77,7 +97,55 @@ def predict_linear_regression(model_name: str, x_values):
     preds = model.predict(x_values).tolist()
     return {"predictions": preds}
 
-'''@server.tool()
-def plot_linear_regression(model_name: str)'''
+@server.tool()
+def list_datasets():
+    return list(datasets.keys())
+
+@server.tool()
+def list_models():
+    return list(models.keys())
+
+@server.tool()
+def plot_data(file_path: str, x_col: str = None, y_col: str = None, plot_type: str = "scatter"):
+    """
+    Plot data from a loaded dataset.
+    
+    Args:
+        file_path: The dataset file path used in load_csv.
+        x_col: The column for the x-axis.
+        y_col: The column for the y-axis (optional for histogram).
+        plot_type: "scatter" or "hist"
+    """
+    if file_path not in datasets:
+        return {"error": "Dataset not loaded. Call load_csv first."}
+    
+    df = datasets[file_path]
+    plot_path = os.path.join(PLOTS_DIR, f"{os.path.basename(file_path).replace('.csv', '')}_{plot_type}.png")
+
+    plt.figure(figsize=(6, 4))
+    if plot_type == "scatter":
+        if not x_col or not y_col:
+            return {"error": "For scatter plots, both x_col and y_col are required."}
+        plt.scatter(df[x_col], df[y_col], alpha=0.7)
+        plt.xlabel(x_col)
+        plt.ylabel(y_col)
+        plt.title(f"Scatter Plot: {x_col} vs {y_col}")
+
+    elif plot_type == "hist":
+        if not x_col:
+            return {"error": "For hist plots, x_col is required."}
+        plt.hist(df[x_col], bins=20, alpha=0.7)
+        plt.xlabel(x_col)
+        plt.title(f"Histogram of {x_col}")
+
+    else:
+        return {"error": "Invalid plot_type. Choose 'scatter' or 'hist'."}
+
+    plt.tight_layout()
+    plt.savefig(plot_path)
+    plt.close()
+
+    return {"status": "plot_created", "plot_path": plot_path}
+
 if __name__ == "__main__":
     server.run()
