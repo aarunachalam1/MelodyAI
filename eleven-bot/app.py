@@ -116,5 +116,15 @@ PLOTS_FOLDER = os.path.join(app.static_folder, "plots")
 def serve_plot(filename):
     return send_from_directory(PLOTS_FOLDER, filename)
 
+@app.route("/list-plots")
+def list_plots():
+    files = [
+        f"/static/plots/{file}"
+        for file in os.listdir(PLOTS_FOLDER)
+        if file.lower().endswith(".png")
+    ]
+    return jsonify(files)
+
+
 if __name__ == "__main__":
     app.run(debug=True)

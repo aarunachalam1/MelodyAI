@@ -107,18 +107,17 @@ async function sendMessage() {
     makeMessageDiv("You", text);
     chatInput.value = "";
 
-    // mock-plot keyword: show mock image inline
+    
     if (text.toLowerCase().includes("plot")) {
-        const tb = addTypingBubble();
-        setTimeout(() => {
-            removeTypingBubble(tb);
-            makeMessageDiv("Melody", "Here's your plot:");
-            // IMPORTANT: use a URL the browser can load:
-            // place your mock image at: static/plots/Scatter-Plot_thumb-01.png
-            makeMessageDiv("Melody", "/static/plots/Scatter-Plot-Thumb-01.png", true);
-        }, 700);
-        return;
-    }
+    const tb = addTypingBubble();
+    setTimeout(async () => {
+        removeTypingBubble(tb);
+        makeMessageDiv("Melody", "Here's your plot:");
+        await showNewPlots(); // only new images appear
+    }, 700);
+    return;
+}
+
 
     const typingBubble = addTypingBubble();
 
@@ -168,3 +167,22 @@ if (sendBtn) sendBtn.addEventListener("click", sendMessage);
 if (chatInput) chatInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") sendMessage();
 });
+
+
+// Keep track of already displayed plots
+const displayedPlots = new Set();
+
+async function showNewPlots() {
+    const response = await fetch("/list-plots");
+    const images = await response.json();
+
+    // only show images we haven't displayed yet
+    images.forEach(imgURL => {
+        if (!displayedPlots.has(imgURL)) {
+            makeMessageDiv("Melody", "New plot generated:");
+            makeMessageDiv("Melody", imgURL, true);
+            displayedPlots.add(imgURL);
+        }
+    });
+}
+
