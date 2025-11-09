@@ -9,7 +9,7 @@ load_dotenv()
 app = Flask(__name__)
 
 eleven_api = os.getenv("ELEVEN_API_KEY")
-voice_id = os.getenv("VOICE_ID")
+voice_id = "DtsPFCrhbCbbJkwZsb3d"
 
 def text_to_speech(text):
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
@@ -90,7 +90,7 @@ def chat_ui():
 
 @app.route("/saved")
 def saved():
-    plot_files = [f"/static/plots/{f}" for f in os.listdir("static/plots")]
+    plot_files = [f"../gemini-mcp-backend/plots/{f}" for f in os.listdir("../gemini-mcp-backend/plots")]
     return render_template("saved.html", plots=plot_files)
 
 @app.route("/about")
