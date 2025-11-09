@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 import requests
 import os
 import uuid
@@ -8,7 +8,11 @@ import asyncio
 from client import process_message, init_mcp
 
 load_dotenv()
-app = Flask(__name__)
+app = Flask(__name__, static_url_path="/static")
+
+PLOTS_FOLDER = os.path.join(app.static_folder, "plots")
+os.makedirs(PLOTS_FOLDER, exist_ok=True)
+
 
 eleven_api = os.getenv("ELEVEN_API_KEY")
 voice_id = "DtsPFCrhbCbbJkwZsb3d"
@@ -98,11 +102,19 @@ def chat_ui():
 @app.route("/saved")
 def saved():
     plot_files = [f"./plots/{f}" for f in os.listdir("./plots")]
+    plot_files.append("/static/plots/" + f)
     return render_template("saved.html", plots=plot_files)
 
 @app.route("/about")
 def about():
     return render_template("about.html")
+
+
+PLOTS_FOLDER = os.path.join(app.static_folder, "plots")
+
+@app.route('/plots/<filename>')
+def serve_plot(filename):
+    return send_from_directory(PLOTS_FOLDER, filename)
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -11,7 +11,8 @@ import pickle
 server = FastMCP(name="DataScienceTools")
 STATE_FILE = "server_state.pkl"
 MODEL_DIR = "saved_models"
-PLOTS_DIR = "plots"
+PLOTS_DIR = os.path.join(os.getcwd(), "static", "plots")
+
 
 os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(PLOTS_DIR, exist_ok=True)
@@ -142,10 +143,18 @@ def plot_data(file_path: str, x_col: str = None, y_col: str = None, plot_type: s
         return {"error": "Invalid plot_type. Choose 'scatter' or 'hist'."}
 
     plt.tight_layout()
+    file_id = uuid.uuid4().hex
+    filename = f"{plot_created}_{file_id}.png"
+    plot_path = os.path.join(PLOTS_DIR, filename)
     plt.savefig(plot_path)
     plt.close()
 
-    return {"status": "plot_created", "plot_path": plot_path}
+    url_path = "/static/plots/" + filename
+    return {
+        "status": "plot_created",
+        "plot_path": plot_path,
+        "plot_url": url_path
+    }
 
 if __name__ == "__main__":
     server.run()

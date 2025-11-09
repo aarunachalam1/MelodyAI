@@ -1,3 +1,15 @@
+/* typing bubble dots (keep in style.css or <style>) */
+.msg.typing { background: #282832; color:#e7e7e7; align-self:flex-start; border-bottom-left-radius:2px; padding:8px 10px; }
+.typing-dots { display:flex; gap:6px; align-items:center; }
+.typing-dots span { width:8px; height:8px; background:#fff; border-radius:50%; opacity:0.25; transform:translateY(0); animation: blink 1s infinite ease-in-out; }
+.typing-dots span:nth-child(2) { animation-delay:0.15s; }
+.typing-dots span:nth-child(3) { animation-delay:0.3s; }
+@keyframes blink { 0%{opacity:0.2; transform:translateY(0);} 50%{opacity:1; transform:translateY(-3px);} 100%{opacity:0.2; transform:translateY(0);} }
+
+/* ensure message images are block-level and responsive */
+.msg img { display:block; max-width: 100%; height: auto; border-radius:10px; }
+
+
 /* GLOBAL */
 body {
   margin: 0;
@@ -174,4 +186,17 @@ body {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+
+.mock-plot {
+    width: 250px;
+    margin: 10px 0;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+.mock-plot img {
+    width: 100%;
+    display: block;
 }
