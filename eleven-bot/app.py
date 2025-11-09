@@ -4,12 +4,19 @@ import os
 import uuid
 import elevenlabs
 from dotenv import load_dotenv
+import asyncio
+from client import process_message, init_mcp
 
 load_dotenv()
 app = Flask(__name__)
 
 eleven_api = os.getenv("ELEVEN_API_KEY")
 voice_id = "DtsPFCrhbCbbJkwZsb3d"
+
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
+loop.run_until_complete(init_mcp())
 
 def text_to_speech(text):
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
@@ -36,9 +43,7 @@ def home():
 def chat():
     user_msg = request.json.get("message")
 
-    # TEMP: chatbot just repeats back
-    bot_reply = f"You said: {user_msg}"
-
+    bot_reply = loop.run_until_complete(process_message(user_msg))
     # Convert to speech
     audio_path = text_to_speech(bot_reply)
 
